@@ -15,6 +15,22 @@ IRIS_TRAINING_URL = "http://download.tensorflow.org/data/iris_training.csv"
 IRIS_TEST = "tmp/tensorflow/iris/iris_test.csv"
 IRIS_TEST_URL = "http://download.tensorflow.org/data/iris_test.csv"
 
+
+import numpy as np
+
+training_set = tf.contrib.learn.datasets.base.load_csv_with_header(
+    filename=IRIS_TRAINING, target_dtype=np.int, features_dtype=np.float32)
+
+train_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x": np.array(training_set.data)},
+    y=np.array(training_set.target),
+    num_epochs=None,
+    shuffle=True)
+
+classifier.train(input_fn=train_input_fn, steps=2000)
+
+
+
 def main():
   # If the training and test sets aren't stored locally, download them.
   if not os.path.exists(IRIS_TRAINING):
