@@ -15,16 +15,24 @@ if __name__=='__main__':
 
     np.random.seed(1)
     dataset = np.random.rand(NUM_DATA,2)
-    dataindex = np.arange(1,NUM_DATA)
+    dataindex = np.arange(NUM_DATA)
     np.random.shuffle(dataindex)
 
     training_set = dataset[dataindex[0:NUM_TRAINING_DATA], :]
     validation_set = dataset[dataindex[NUM_TRAINING_DATA:NUM_TRAINING_DATA+NUM_VALIDATION_DATA], :]
     test_set = dataset[dataindex[NUM_TRAINING_DATA+NUM_VALIDATION_DATA:NUM_DATA], :]
 
-    training_ans = np.dot(training_set, np.array([[1],[1]],dtype=np.float32))
-    validation_ans = np.dot(validation_set, np.array([[1],[1]],dtype=np.float32))
-    test_ans = np.dot(test_set, np.array([[1],[1]],dtype=np.float32))
+    #training_ans = training_set @ np.array([[1],[1]],dtype=np.float32)
+    #validation_ans = validation_set @ np.array([[1],[1]],dtype=np.float32)
+    #test_ans = test_set @ np.array([[1],[1]],dtype=np.float32)
+
+    training_ans = np.fromiter(map(lambda x: x[0] * x[1], training_set),dtype=np.float32)
+    validation_ans = np.fromiter(map(lambda x: x[0] * x[1], validation_set),dtype=np.float32)
+    test_ans = np.fromiter(map(lambda x: x[0] * x[1], test_set),dtype=np.float32)
+    training_ans.shape = (NUM_TRAINING_DATA,1)
+    validation_ans.shape = (NUM_VALIDATION_DATA,1)
+    test_ans.shape = (NUM_TEST_DATA,1)
+
 
     x = tf.placeholder(tf.float32, shape=[None, 2])
     y_ = tf.placeholder(tf.float32, shape=[None, 1])
@@ -48,6 +56,7 @@ if __name__=='__main__':
     coss = tf.reduce_mean((tf.nn.l2_loss(y-y_)))
 
     train_step = tf.train.GradientDescentOptimizer(0.005).minimize(coss)
+    print(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
 
     for epoch in range(100):
         train_index = np.arange(1, NUM_TRAINING_DATA)
@@ -55,8 +64,8 @@ if __name__=='__main__':
         run_training_set = training_set[train_index,:]
         run_train_ans = training_ans[train_index,:]
         for i in range(int(NUM_TRAINING_DATA/BATCH_SIZE)):
-            train_step.run(feed_dict={x: run_training_set[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:],
-                                      y_: run_train_ans[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:]})
+            sess.run(train_step, feed_dict={x: run_training_set[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:],
+                                            y_: run_train_ans[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:]})
 
     print('This is a toy example of floating adding using DNN')
     print('Average loss on test set: ', coss.eval(feed_dict={x: test_set, y_: test_ans}))
@@ -65,3 +74,4 @@ if __name__=='__main__':
     test_by_hand_ans = np.array([0, 0], dtype=np.float32)
     test_by_hand_ans.shape = (2, 1)
     print('Manual test at: \n', test_by_hand, '\nResult: \n', sess.run(y, feed_dict={x:test_by_hand, y_: test_by_hand_ans}))
+    print(dataset[0])
