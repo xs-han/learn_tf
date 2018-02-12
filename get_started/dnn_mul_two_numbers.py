@@ -17,11 +17,13 @@ def dnn(layers, x, y_, act_func = tf.nn.relu6):
         print('Error layer configuration. Exit...')
         exit(-1)
     layer_output = x
+    tf.set_random_seed(10)
     for i in range(len(layers)-1):
         this_units_num = layers[i]
         next_units_num = layers[i+1]
         w = tf.get_variable("Layer_"+str(i)+"_weight", dtype=tf.float32,
-                            initializer=tf.truncated_normal(shape=(this_units_num, next_units_num), stddev=0.1))
+                            initializer=tf.truncated_normal(shape=(this_units_num, next_units_num),
+                                                            stddev=0.1))
         b = tf.get_variable("Layer_"+str(i)+"_bias", dtype=tf.float32,
                             initializer=tf.zeros(shape=(next_units_num)))
         if i != len(layers)-2:
@@ -50,16 +52,17 @@ def main():
     validation_ans.shape = (NUM_VALIDATION_DATA,1)
     test_ans.shape = (NUM_TEST_DATA,1)
 
-    layers = [2, 4, 8, 16, 32, 1]
+    layers = [2, 4, 8, 16, 32, 16, 1]
     x = tf.placeholder(tf.float32, shape=[None, layers[0]])
     y_ = tf.placeholder(tf.float32, shape=[None, layers[-1]])
-    layer_output, coss = dnn(layers, x, y_, tf.nn.relu)
+    layer_output, coss = dnn(layers, x, y_, tf.nn.relu6)
     train_step = tf.train.AdamOptimizer(2e-4).minimize(coss)
 
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for epoch in range(400):
+        for epoch in range(600):
+            tf.random_shuffle(training_set)
             train_index = np.arange(1, NUM_TRAINING_DATA)
             np.random.shuffle(train_index)
             run_training_set = training_set[train_index,:]
@@ -67,9 +70,12 @@ def main():
             for i in range(int(NUM_TRAINING_DATA/BATCH_SIZE)):
                 sess.run(train_step, feed_dict={x: run_training_set[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:],
                                                 y_: run_train_ans[i*BATCH_SIZE:(i+1)*BATCH_SIZE,:]})
-            print('Average loss on test set: ', sess.run(coss, feed_dict={x: test_set, y_: test_ans}))
+            print('Average loss on validation set: ',
+                  sess.run(coss, feed_dict={x: validation_set, y_: validation_ans}),
+                  'while on training set: ',
+                  sess.run(coss, feed_dict={x: training_set, y_: training_ans}))
 
-        print('This is a toy example of floating adding using DNN')
+        print('This is a toy example of floating multiplying using DNN')
         print('Average loss on test set: ', sess.run(coss, feed_dict={x: test_set, y_: test_ans}))
         test_by_hand = np.array([[0.2,0.6],[0.1,0.3]], dtype=np.float32)
         test_by_hand.shape=(2,2)
@@ -81,4 +87,3 @@ def main():
 
 if __name__=='__main__':
     main()
-
